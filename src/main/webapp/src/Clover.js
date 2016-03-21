@@ -5,10 +5,14 @@
  * @constructor
  */
 function Clover(configuration) {
-    this.debugConfiguration = {};
     this.configuration = configuration;
     if (!this.configuration) {
         this.configuration = {};
+    }
+    if(this.configuration.debugConfiguration) {
+        this.debugConfiguration = this.configuration.debugConfiguration
+    } else {
+        this.debugConfiguration = {};
     }
     this.configuration.allowOvertakeConnection =
         Boolean(this.configuration["allowOvertakeConnection"]);
@@ -837,7 +841,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_OK, finishOKCB);
         allCallBacks.push({"event": LanMethod.FINISH_OK, "callback": finishOKCB});
@@ -857,7 +861,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_CANCEL, finishCancelCB);
         allCallBacks.push({"event": LanMethod.FINISH_CANCEL, "callback": finishCancelCB});
@@ -1005,7 +1009,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_OK, finishOKCB);
         allCallBacks.push({"event": LanMethod.FINISH_OK, "callback": finishOKCB});
@@ -1023,7 +1027,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_CANCEL, finishCancelCB);
         allCallBacks.push({"event": LanMethod.FINISH_CANCEL, "callback": finishCancelCB});
@@ -1071,17 +1075,30 @@ function Clover(configuration) {
      */
     this.printReceipt = function (printRequest, completionCallback) {
         var callbackPayload = {"request": printRequest};
+        var me = this;
+        var allCallBacks = [];
 
-        var finishCancelCB = function (message) {
-            try {
-                completionCallback(null, callbackPayload);
-            } catch (err) {
-                console.log(err);
+        var onUiState = function onUiState(message) {
+            var payload = JSON.parse(message.payload);
+            if(payload.uiState == "RECEIPT_OPTIONS") {
+                if(payload.uiDirection == "ENTER") {
+                    // we can ignore this.  If a POS wants to do more
+                    // granular integration, they will need to write their
+                    // own handler.
+                } else if(payload.uiDirection == "EXIT") {
+                    if(payload["uiState"] == "RECEIPT_OPTIONS") {
+                        // Remove the UI callback handler, we are done with it.
+                        me.device.removeListeners(allCallBacks);
+                        me.endOfOperation();
+                    }
+                } else {
+                    console.log("Unknown ui event direction:" + payload.uiDirection);
+                }
             }
-            // We could let them do this
-            this.device.sendShowWelcomeScreen();
-        }.bind(this);
-        this.device.once(LanMethod.FINISH_CANCEL, finishCancelCB);
+        }
+        // Listen for UI_STATE messages
+        clover.device.on(LanMethod.UI_STATE, onUiState);
+        allCallBacks.push({"event": LanMethod.UI_STATE, "callback": onUiState});
 
         try {
             this.device.sendShowPaymentReceiptOptions(printRequest.orderId, printRequest.paymentId);
@@ -1279,12 +1296,14 @@ function Clover(configuration) {
      */
     this.vaultCard = function (cardEntryMethods, completionCallback) {
         var callbackPayload = {"request": {"cardEntryMethods": cardEntryMethods}};
+        var me = this;
 
         var vaultCardCB = function (message) {
             var payload = JSON.parse(message.payload);
             callbackPayload["response"] = payload;
 
             completionCallback(null, callbackPayload);
+            me.endOfOperation();
         }.bind(this);
         this.device.once(LanMethod.VAULT_CARD_RESPONSE, vaultCardCB);
 
@@ -1679,6 +1698,20 @@ function Clover(configuration) {
             }
             console.log(cloverError);
         }
+    }
+
+    /**
+     * @private - action after an operation
+     */
+    this.endOfOperation = function() {
+        // Say "Thank you" for three seconds
+        this.device.sendShowThankYouScreen();
+        // Then say "Welcome"
+        setTimeout(
+            function () {
+                this.device.sendShowWelcomeScreen();
+            }.bind(this), 3000 // three seconds
+        );
     }
 
     //////////

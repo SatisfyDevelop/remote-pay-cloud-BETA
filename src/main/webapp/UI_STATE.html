@@ -35,7 +35,10 @@
 <script>
 
   // Create the Clover object to communicate with the device on paage load
-  var clover = new Clover();
+  var config = Clover.loadConfigurationFromCookie("CLOVER_DEFAULT");
+  // config.debugConfiguration[WebSocketDevice.ALL_MESSAGES] = true;
+
+  var clover = new Clover(config);
   // Following will try to handle when incomplete configurations are encountered.
   clover.incompleteConfiguration = exampleIncompleteConfigurationHandler;
 
@@ -54,13 +57,6 @@
     } else {
       // Listen for UI_STATE messages
       clover.device.on(LanMethod.UI_STATE, onUiState);
-
-      // On a finish ok, clear the options and go back to the welcome screen
-      var finishOKCB = function (message) {
-        clover.device.sendShowWelcomeScreen();
-      };
-      clover.device.on(LanMethod.FINISH_OK,finishOKCB);
-
       enable("doPrintAReceipt");
     }
   }
