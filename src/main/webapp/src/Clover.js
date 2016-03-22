@@ -1101,7 +1101,8 @@ function Clover(configuration) {
         allCallBacks.push({"event": LanMethod.UI_STATE, "callback": onUiState});
 
         try {
-            this.device.sendShowPaymentReceiptOptions(printRequest.orderId, printRequest.paymentId);
+            // this.device.sendShowPaymentReceiptOptions(printRequest.orderId, printRequest.paymentId);
+            this.device.sendShowPaymentReceiptOptionsV2(printRequest.orderId, printRequest.paymentId);
         } catch (error) {
             var cloverError = new CloverError(LanMethod.SHOW_PAYMENT_RECEIPT_OPTIONS,
                 "Failure attempting to print receipt", error);
