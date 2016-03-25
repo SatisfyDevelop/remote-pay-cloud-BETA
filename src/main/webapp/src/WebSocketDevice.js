@@ -893,6 +893,36 @@ WebSocketDevice.prototype.sendRefund = function(orderId, paymentId, amount, ackI
 }
 
 /**
+ * Refund a payment, partial or complete
+ *
+ * @param {string} orderId - the id for the order the refund is against
+ * @param {string} paymentId - the id for the payment on the order the refund is against
+ * @param {number} [amount] - the amount that will be refunded.
+ * @param {boolean} [fullRefund] - If true, the amount of the passed payment will be refunded.
+ * @param {string} [ackId] - an optional identifier that can be used to track an acknowledgement
+ *  to this message.  This should be a unique identifier, but this is NOT enforced in any way.
+ *  A "ACK" message will be returned with this identifier as the message id if this
+ *  parameter is included.  This "ACK" message will be in addition to any other message
+ *  that may be generated as a result of this message being sent.
+ */
+WebSocketDevice.prototype.sendRefundV2 = function(orderId, paymentId, amount, fullRefund, ackId) {
+    var payload = {};
+    payload.orderId = orderId;
+    payload.paymentId = paymentId;
+    if(fullRefund) {
+        payload.fullRefund = fullRefund;
+    } else if(amount) {
+        payload.amount = amount;
+    }
+    payload.version = 2;
+    var lanMessage = this.messageBuilder.buildRefund(payload);
+    // If an id is included, then an "ACK" message will be sent for this message
+    if(ackId) lanMessage.id = ackId;
+
+    this.sendMessage(lanMessage);
+}
+
+/**
  * Capture a preauthorization
  *
  * @param {string} orderId - the id for the order the payment was against

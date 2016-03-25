@@ -1034,7 +1034,12 @@ function Clover(configuration) {
         allCallBacks.push({"event": LanMethod.FINISH_CANCEL, "callback": finishCancelCB});
 
         try {
-            this.device.sendRefund(refundRequest.orderId, refundRequest.paymentId, refundRequest["amount"]);
+            if(refundRequest["version"] && refundRequest["version"] === 2) {
+                this.device.sendRefundV2(refundRequest.orderId, refundRequest.paymentId,
+                    refundRequest["amount"], refundRequest["fullRefund"] );
+            } else {
+                this.device.sendRefund(refundRequest.orderId, refundRequest.paymentId, refundRequest["amount"]);
+            }
         } catch (error) {
             var cloverError = new CloverError(LanMethod.REFUND_REQUEST,
                 "Failure attempting to send refund request", error);
@@ -1972,9 +1977,13 @@ Clover.minimalConfigurationPossibilities = [
  * @typedef {Object} RefundRequest
  * @property {string} orderId - the id of the order to refund
  * @property {string} paymentId - the id of the payment on the order to refund
- * @property {number} [amount] - the amount to refund.  If not included, the full payment is refunded.  The amount
- *  cannot exceed the original payment, and additional constraints apply to this (EX: if a partial refund
- *  has already been performed then the amount canot exceed the remaining payment amount).
+ * @property {boolean} [fullRefund] - if true, then a full refund is done for the version 2 call.
+ * @property {number} [amount] - the amount to refund.  If not included or 0, version 1 will refund the full payment.
+ *  If using the version 2 call, 0 will result in an error. The amount cannot exceed the original payment, and
+ *  additional constraints apply to this (EX: if a partial refund has already been performed then the amount
+ *  cannot exceed the remaining payment amount).
+ * @property {integer} [version] - the veresion of the refund request.  If not included, the current version of the
+ *  call is used.
  */
 
 /**
