@@ -16,12 +16,14 @@
       var configuration = Clover.loadConfigurationFromCookie("CLOVER_DEFAULT");
       if (!configuration || Object.keys(configuration).length == 0) {
         disable("config_erase");
+        enable("configure_connection");
         document.getElementById("uiFeedback").innerHTML = "";
       } else {
         var resultDisplay = "";
         resultDisplay += "<pre>" + JSON.stringify(configuration, null, 4) + "</pre>";
         document.getElementById("uiFeedback").innerHTML = resultDisplay;
         enable("config_erase");
+        disable("configure_connection");
       }
     }
 
@@ -43,26 +45,16 @@
 
 <a href="./docs">Developer documents</a><br/>
 
-<p>
-  The examples use different methods to establish a connection with the device.<br/>
-  <ul>
-    <li>a merchant may need to log in to the Clover server</li>
-    <li>an oauth token may be used</li>
-    <li>a saved configuration may be loaded from a persistent store (example stores information in a cookie)
-    </li>
-  </ul>
-</p>
+<div id="configure_connection" style="display:none">
+  <a href="./connection_configuration.html">Configure Connection to device</a><br/>
+</div>
 
 <div id="config_erase" style="display:none">
   <p>Current Configuration</p>
   <div id="uiFeedback"></div>
   <button id="save_cfg_btn" onclick="Clover.writeConfigurationToCookie({});displayConfig()">Remove saved configuration</button>
 </div>
-
-  <li>Cloud</li>
-  <ul>
-    <li><a href="./cloud_index.html">Main Example</a><br/></li>
-
+ <ul>
     <li><a href="sale3.html">Sale, requires login to Clover</a><br/></li>
 
     <li><a href="sale.html">Sale, using a previously obtained oauthToken</a><br/></li>

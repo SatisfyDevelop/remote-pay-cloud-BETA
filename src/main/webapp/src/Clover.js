@@ -1790,6 +1790,10 @@ Clover.getCookie = function(cname) {
     return "";
 }
 
+Clover.delete_cookie = function( cname ) {
+    document.cookie = cname + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
 /**
  * Utility function to write configuration to a browser
  * cookie.
@@ -1825,6 +1829,14 @@ Clover.loadConfigurationFromCookie = function (configurationName) {
         configuration = JSON.parse(cvalue);
     }
     return configuration;
+}
+
+/**
+ * Utility function to delete configuration cookie.
+ */
+Clover.deleteConfigurationCookie = function () {
+    if (!this.configurationName)this.configurationName = "CLOVER_DEFAULT";
+    Clover.delete_cookie(this.configurationName);
 }
 
 /**
