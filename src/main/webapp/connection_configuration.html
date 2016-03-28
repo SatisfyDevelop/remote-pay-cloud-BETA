@@ -208,8 +208,7 @@
   </form>
 </div>
 <div id="example_home_link" style="display:none">
-  Device communication verified, and configuration is stored. You can return to the examples page now.<br/>
-  <a href="/">Example Home</a>
+  <a href="/">Main example home</a>
 </div>
 <!-- controls to 'pair' or 'unpair' the device -->
 <p id="pair_device" style="display:none">
@@ -224,6 +223,7 @@
    */
   // the map of available devices
   var deviceBySerial;
+  var clover;
 
   var config = Clover.loadConfigurationFromCookie("CLOVER_DEFAULT");
   if(config) {
@@ -245,22 +245,6 @@
       // Endpoints for the REST services
       var endpoints = new Endpoints(cloverOAuth);
 
-      // This object is a utility to build the messages that are sent.
-      var remoteMessageBuilder = new RemoteMessageBuilder("com.clover.remote.protocol.websocket");
-
-      /**
-       * How we communicate with the device
-       *
-       * The WebsocketDevice emits messages as they are received.
-       * We assign the messagebuilder to the device to allow it to
-       * send and receive ping/pong messages.
-       *
-       */
-      var device = new WebSocketDevice();
-      device.messageBuilder = remoteMessageBuilder;
-      // Echo all messages sent and received.
-      device.echoAllMessages = false;
-
       // Load the Merchant
       var merchantUrl = endpoints.getMerchantEndpoint(cloverOAuth.getURLParams()["merchant_id"]);
       xmlHttpSupport.getData(merchantUrl,
@@ -270,45 +254,6 @@
             // Load the devices for the merchant
             var devicesUrl = endpoints.getDevicesEndpoint(cloverOAuth.getURLParams()["merchant_id"]);
             xmlHttpSupport.getData(devicesUrl, displayDevices, console.log.bind(console));
-
-            device.on(LanMethod.DISCOVERY_RESPONSE,
-                function (message) {
-                  // This id is set when the discovery request is sent when the device 'onopen' is called.
-                  clearInterval(device.discoveryTimerId);
-                  document.getElementById(getSelectedDevice().serial + "_status").style.backgroundColor = 'green';
-                  disable('pair_button');
-                  Clover.writeConfigurationToCookie(getConfig(), true);
-                  enable("example_home_link");
-                  disable("device_box");
-                }
-            );
-
-            // The device connection has been opened
-            device.on(WebSocketDevice.DEVICE_OPEN, function () {
-              // The connection to the device is open, but we do not yet know if there is anyone at the other end.
-              // Send discovery request messages until we get a discovery response.
-              device.dicoveryMessagesSent = 0;
-              device.discoveryTimerId =
-                  setInterval(
-                      function () {
-                        displayUIFeedBack("Sending 'discovery' message to device.");
-                        device.sendMessage(device.messageBuilder.buildDiscoveryRequest());
-                        device.dicoveryMessagesSent++;
-
-                        // Arbitrary decision that 10 messages is long enough to wait.
-                        if (device.dicoveryMessagesSent > 10) {
-                          displayUIFeedBack("Something is wrong.  we are getting pong messages, but no discovery response." +
-                              "  Shutting down the connection.");
-                          device.disconnectFromDevice();
-                          clearInterval(device.discoveryTimerId);
-                        }
-                      }, 3000
-                  );
-              console.log('device opened');
-              displayUIFeedBack("Communication channel open.");
-              device.sendMessage(device.messageBuilder.buildDiscoveryRequest());
-            });
-
           },
           console.log.bind(console)
       );
@@ -366,7 +311,22 @@
               // and assume that the notification WAS SENT.
               if (!data.hasOwnProperty('sent') || data.sent) {
                 var url = data.host + Endpoints.WEBSOCKET_PATH + '?token=' + data.token;
-                device.contactDevice(url);
+
+                var clover = new Clover(getConfig());
+                // device.contactDevice(url);
+                clover.initDeviceConnection(
+                    function(error, message) {
+                      if(error) {
+                        displayUIFeedBack(error);
+                      } else {
+                        disable("device_box");
+                        disable('pair_device');
+                        enable("example_home_link");
+                        displayUIFeedBack("Device communication verified, and configuration is stored. " +
+                            "Return to the main examples page to run the examples.");
+                      }
+                    }
+                );
               } else {
                 displayUIFeedBack("Device is not connected to push server, cannot create connection");
               }
@@ -386,9 +346,9 @@
 
   function shutdown() {
     writeConfigurationOptionsToCookie();
-    if (device) {
+    if (clover) {
       try {
-        device.disconnectFromDevice()
+        clover.close();
       } catch (e) {
       }
     }

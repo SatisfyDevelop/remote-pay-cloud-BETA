@@ -73,7 +73,7 @@ function WebSocketDevice(allowOvertakeConnection, friendlyId) {
     this.reContactDevice = function(ws_address) {
         var me = this;
         // Reset the timestamp values
-        this.pongReceivedMillis = new Date().getTime();
+        // this.pongReceivedMillis = new Date().getTime();
         this.pingSentMillis = new Date().getTime();
 
         /*
