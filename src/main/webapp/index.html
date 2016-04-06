@@ -16,12 +16,14 @@
       var configuration = Clover.loadConfigurationFromCookie("CLOVER_DEFAULT");
       if (!configuration || Object.keys(configuration).length == 0) {
         disable("config_erase");
+        enable("configure_connection");
         document.getElementById("uiFeedback").innerHTML = "";
       } else {
         var resultDisplay = "";
         resultDisplay += "<pre>" + JSON.stringify(configuration, null, 4) + "</pre>";
         document.getElementById("uiFeedback").innerHTML = resultDisplay;
         enable("config_erase");
+        disable("configure_connection");
       }
     }
 
@@ -43,39 +45,25 @@
 
 <a href="./docs">Developer documents</a><br/>
 
-<p>
-  The examples use different methods to establish a connection with the device.<br/>
-  <ul>
-    <li>a merchant may need to log in to the Clover server</li>
-    <li>an oauth token may be used</li>
-    <li>a saved configuration may be loaded from a persistent store (example stores information in a cookie)
-    </li>
-  </ul>
-</p>
+<div id="configure_connection" style="display:none">
+  <a href="./connection_configuration.html">Configure Connection to device</a><br/>
+</div>
 
 <div id="config_erase" style="display:none">
   <p>Current Configuration</p>
   <div id="uiFeedback"></div>
-  <button id="save_cfg_btn" onclick="Clover.writeConfigurationToCookie({});displayConfig()">Remove saved configuration</button>
+  <button id="save_cfg_btn" onclick="Clover.writeConfigurationToCookie({});displayConfig()">Reset Configuration</button>
 </div>
-
-  <li>Cloud</li>
-  <ul>
-    <li><a href="./cloud_index.html">Main Example</a><br/></li>
-
-    <li><a href="sale3.html">Sale, requires login to Clover</a><br/></li>
-
-    <li><a href="sale.html">Sale, using a previously obtained oauthToken</a><br/></li>
-
-    <li><a href="sale_withPaymentID.html">Sale, with paymentId passed in</a><br/></li>
+ <ul>
+    <li><a href="sale_withPaymentID.html">Sale</a><br/></li>
 
     <li><a href="sale_withTipAdjust.html">Sale, with tip adjustment</a><br/></li>
 
     <li><a href="sale_custom_tip.html">Sale, custom tip amount</a><br/></li>
 
-    <li><a href="sale_remote_receipt.html">Sale, return receipt info to POS</a><br/></li>
+    <li><a href="sale_remote_receipt.html">Sale, return receipt info to Browser</a><br/></li>
 
-    <li><a href="saleTimeout.html">Sale timeout to welcome screen</a><br/></li>
+    <li><a href="saleTimeout.html">Sale, timeout returns to welcome screen</a><br/></li>
 
     <li><a href="UI_STATE.html">Print a receipt from a previous payment, display UI options</a><br/></li>
 
@@ -85,9 +73,9 @@
 
     <li><a href="sale_manualSigVerify2.html">Sale with manual signature verification (per transaction)</a><br/></li>
 
-    <li><a href="printImage.html">Print Image on receipt</a><br/></li>
+    <li><a href="printImage.html">Print an image</a><br/></li>
 
-    <li><a href="printImageFromURL.html">Print Image on receipt from a url</a><br/></li>
+    <li><a href="printImageFromURL.html">Print an image from a url</a><br/></li>
 
     <li><a href="naked_refund.html">(Naked) Credit/Refund</a><br/></li>
 
@@ -97,15 +85,11 @@
 
     <li><a href="void.html">Void</a><br/></li>
 
-    <li><a href="bad_disconnect_cloud_index.html">Test connection instability</a><br/></li>
-
     <li><a href="showLastMessage.html">Get the last message the device processed</a><br/></li>
-
-    <li><a href="sale_withTipAdjust.html">Sale then tip adjust</a><br/></li>
 
     <li><a href="vaultCard.html">'Vault' a card</a><br/></li>
 
-    <li><a href="vaultCardWithSale.html">'Vault' a card, then do a sale with it.</a><br/></li>
+    <li><a href="vaultCardWithSale.html">'Vault' a card, then do a sale using it.</a><br/></li>
 
     <li><a href="sale_captureAuth.html">Pre authorization with capture</a><br/></li>
 
