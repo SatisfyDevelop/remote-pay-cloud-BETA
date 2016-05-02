@@ -112,6 +112,8 @@ function mySaleResult(error, saleResult) {
 ```
 clover.initDeviceConnection(makeASale);
 ```
+####Disclaimer
+This is a beta release and will not be supported long term. There may be a few incompatible changes in the general release, which is coming soon. 
 
 View our [documentation](https://rawgit.com/clover/remote-pay-cloud/master/src/main/webapp/docs/index.html) to see the 
 details of the JS SDK protocol for showing order details, starting a transaction, and getting a payment response back 
