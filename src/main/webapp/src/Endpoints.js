@@ -20,6 +20,20 @@ function Endpoints(cloverOAuth) {
      * @param {string} merchantId - the id of the merchant to use when getting the device list.
      * @returns {string} endpoint - the url to use to retreive the devices
      */
+    this.getMerchantEndpoint = function(merchantId) {
+        var variables = {};
+        variables[Endpoints.MERCHANT_V3_KEY] = merchantId;
+        variables[Endpoints.ACCESS_TOKEN_KEY] = this.cloverOAuth.getAccessToken();
+        return this.cloverOAuth.configuration.domain +
+            this.setVariables(Endpoints.MERCHANT_V3_PATH + Endpoints.ACCESS_TOKEN_SUFFIX, variables);
+    }
+
+    /**
+     * The endpoint used to obtain a list of devices
+     *
+     * @param {string} merchantId - the id of the merchant to use when getting the device list.
+     * @returns {string} endpoint - the url to use to retreive the devices
+     */
     this.getDevicesEndpoint = function(merchantId) {
         var variables = {};
         variables[Endpoints.MERCHANT_V3_KEY] = merchantId;

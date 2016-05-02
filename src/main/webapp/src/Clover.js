@@ -5,10 +5,14 @@
  * @constructor
  */
 function Clover(configuration) {
-    this.debugConfiguration = {};
     this.configuration = configuration;
     if (!this.configuration) {
         this.configuration = {};
+    }
+    if(this.configuration.debugConfiguration) {
+        this.debugConfiguration = this.configuration.debugConfiguration
+    } else {
+        this.debugConfiguration = {};
     }
     this.configuration.allowOvertakeConnection =
         Boolean(this.configuration["allowOvertakeConnection"]);
@@ -837,7 +841,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_OK, finishOKCB);
         allCallBacks.push({"event": LanMethod.FINISH_OK, "callback": finishOKCB});
@@ -857,7 +861,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_CANCEL, finishCancelCB);
         allCallBacks.push({"event": LanMethod.FINISH_CANCEL, "callback": finishCancelCB});
@@ -1006,7 +1010,7 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_OK, finishOKCB);
         allCallBacks.push({"event": LanMethod.FINISH_OK, "callback": finishOKCB});
@@ -1024,13 +1028,18 @@ function Clover(configuration) {
             } catch (err) {
                 console.log(err);
             }
-            me.device.sendShowWelcomeScreen();
+            me.endOfOperation();
         };
         this.device.once(LanMethod.FINISH_CANCEL, finishCancelCB);
         allCallBacks.push({"event": LanMethod.FINISH_CANCEL, "callback": finishCancelCB});
 
         try {
-            this.device.sendRefund(refundRequest.orderId, refundRequest.paymentId, refundRequest["amount"]);
+            if(refundRequest["version"] && refundRequest["version"] === 2) {
+                this.device.sendRefundV2(refundRequest.orderId, refundRequest.paymentId,
+                    refundRequest["amount"], refundRequest["fullRefund"] );
+            } else {
+                this.device.sendRefund(refundRequest.orderId, refundRequest.paymentId, refundRequest["amount"]);
+            }
         } catch (error) {
             var cloverError = new CloverError(LanMethod.REFUND_REQUEST,
                 "Failure attempting to send refund request", error);
@@ -1072,20 +1081,34 @@ function Clover(configuration) {
      */
     this.printReceipt = function (printRequest, completionCallback) {
         var callbackPayload = {"request": printRequest};
+        var me = this;
+        var allCallBacks = [];
 
-        var finishCancelCB = function (message) {
-            try {
-                completionCallback(null, callbackPayload);
-            } catch (err) {
-                console.log(err);
+        var onUiState = function onUiState(message) {
+            var payload = JSON.parse(message.payload);
+            if(payload.uiState == "RECEIPT_OPTIONS") {
+                if(payload.uiDirection == "ENTER") {
+                    // we can ignore this.  If a POS wants to do more
+                    // granular integration, they will need to write their
+                    // own handler.
+                } else if(payload.uiDirection == "EXIT") {
+                    if(payload["uiState"] == "RECEIPT_OPTIONS") {
+                        // Remove the UI callback handler, we are done with it.
+                        me.device.removeListeners(allCallBacks);
+                        me.endOfOperation();
+                    }
+                } else {
+                    console.log("Unknown ui event direction:" + payload.uiDirection);
+                }
             }
-            // We could let them do this
-            this.device.sendShowWelcomeScreen();
-        }.bind(this);
-        this.device.once(LanMethod.FINISH_CANCEL, finishCancelCB);
+        }
+        // Listen for UI_STATE messages
+        clover.device.on(LanMethod.UI_STATE, onUiState);
+        allCallBacks.push({"event": LanMethod.UI_STATE, "callback": onUiState});
 
         try {
-            this.device.sendShowPaymentReceiptOptions(printRequest.orderId, printRequest.paymentId);
+            // this.device.sendShowPaymentReceiptOptions(printRequest.orderId, printRequest.paymentId);
+            this.device.sendShowPaymentReceiptOptionsV2(printRequest.orderId, printRequest.paymentId);
         } catch (error) {
             var cloverError = new CloverError(LanMethod.SHOW_PAYMENT_RECEIPT_OPTIONS,
                 "Failure attempting to print receipt", error);
@@ -1183,6 +1206,35 @@ function Clover(configuration) {
     }
 
     /**
+     * Sends a break message to the device to reset
+     * the state of the device. 
+     * <B>Warning: this will cause any pending transaction messages to be lost!</B>
+     * @param {requestCallback} [completionCallback]
+     */
+    this.resetDevice = function(completionCallback) {
+      // Note - this is a pattern for sending keystrokes ot the device.
+      // Available keystrokes can be found in KeyPress.
+      var callbackPayload = {"request": "break"};
+      var uuid = null;
+      if (completionCallback) {
+          uuid = this.genericAcknowledgedCall(callbackPayload, completionCallback, true);
+      }
+      try {
+          this.device.sendBreak(uuid);
+      } catch (error) {
+          var cloverError = new CloverError(LanMethod.BREAK,
+              "Failure attempting to reset device", error);
+          if (completionCallback) {
+              completionCallback(cloverError, {
+                  "code": "ERROR",
+                  "request": callbackPayload
+              });
+          }
+          console.log(cloverError);
+      }
+    }
+
+    /**
      * Opens the cash drawer
      *
      * @param {string} reason - the reason the cash drawer was opened.
@@ -1274,12 +1326,14 @@ function Clover(configuration) {
      */
     this.vaultCard = function (cardEntryMethods, completionCallback) {
         var callbackPayload = {"request": {"cardEntryMethods": cardEntryMethods}};
+        var me = this;
 
         var vaultCardCB = function (message) {
             var payload = JSON.parse(message.payload);
             callbackPayload["response"] = payload;
 
             completionCallback(null, callbackPayload);
+            me.endOfOperation();
         }.bind(this);
         this.device.once(LanMethod.VAULT_CARD_RESPONSE, vaultCardCB);
 
@@ -1676,6 +1730,20 @@ function Clover(configuration) {
         }
     }
 
+    /**
+     * @private - action after an operation
+     */
+    this.endOfOperation = function() {
+        // Say "Thank you" for three seconds
+        this.device.sendShowThankYouScreen();
+        // Then say "Welcome"
+        setTimeout(
+            function () {
+                this.device.sendShowWelcomeScreen();
+            }.bind(this), 3000 // three seconds
+        );
+    }
+
     //////////
 
     ///**
@@ -1756,6 +1824,10 @@ Clover.getCookie = function(cname) {
     return "";
 }
 
+Clover.delete_cookie = function( cname ) {
+    document.cookie = cname + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
 /**
  * Utility function to write configuration to a browser
  * cookie.
@@ -1791,6 +1863,14 @@ Clover.loadConfigurationFromCookie = function (configurationName) {
         configuration = JSON.parse(cvalue);
     }
     return configuration;
+}
+
+/**
+ * Utility function to delete configuration cookie.
+ */
+Clover.deleteConfigurationCookie = function () {
+    if (!this.configurationName)this.configurationName = "CLOVER_DEFAULT";
+    Clover.delete_cookie(this.configurationName);
 }
 
 /**
@@ -1938,9 +2018,13 @@ Clover.minimalConfigurationPossibilities = [
  * @typedef {Object} RefundRequest
  * @property {string} orderId - the id of the order to refund
  * @property {string} paymentId - the id of the payment on the order to refund
- * @property {number} [amount] - the amount to refund.  If not included, the full payment is refunded.  The amount
- *  cannot exceed the original payment, and additional constraints apply to this (EX: if a partial refund
- *  has already been performed then the amount canot exceed the remaining payment amount).
+ * @property {boolean} [fullRefund] - if true, then a full refund is done for the version 2 call.
+ * @property {number} [amount] - the amount to refund.  If not included or 0, version 1 will refund the full payment.
+ *  If using the version 2 call, 0 will result in an error. The amount cannot exceed the original payment, and
+ *  additional constraints apply to this (EX: if a partial refund has already been performed then the amount
+ *  cannot exceed the remaining payment amount).
+ * @property {integer} [version] - the veresion of the refund request.  If not included, the current version of the
+ *  call is used.
  */
 
 /**

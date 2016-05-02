@@ -1,0 +1,446 @@
+<html>
+<head>
+
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+
+  <!-- following for testing only -->
+  <script src="testConfigBase.js"></script>
+
+  <script src="src/xmlHttpSupport.js"></script>
+  <script src="src/CardEntryMethods.js"></script>
+  <script src="src/CloverOAuth.js"></script>
+  <script src="src/CloverError.js"></script>
+  <script src="src/Clover.js"></script>
+  <script src="src/WebSocketDevice.js"></script>
+  <script src="src/Endpoints.js"></script>
+  <script src="src/CloverID.js"></script>
+  <script src="src/eventemitter3_v1_1_1.js"></script>
+  <script src="src/RemoteMessageBuilder.js"></script>
+
+  <script>
+    var exampleConfigurationsSet = null;
+    function initStuff() {
+      exampleConfigurationsSet = readConfigurationOptionsFromCookie();
+      if(!exampleConfigurationsSet) {
+        exampleConfigurationsSet = exampleConfigurations;
+      }
+      var config = Clover.loadConfigurationFromCookie("CLOVER_DEFAULT");
+
+      var oauthNames = document.getElementById("oauth_names");
+      oauthNames.options.length = 0;
+
+      var oauthUrlNames = document.getElementById("oauth_url_names");
+      oauthUrlNames.options.length = 0;
+
+      var completeConfig = document.getElementById("complete_config");
+      var configNames = document.getElementById("config_names");
+      configNames.options.length = 0;
+
+      for(var key in exampleConfigurationsSet)
+      {
+        if(exampleConfigurationsSet.hasOwnProperty(key))
+        {
+          var oneConfig = exampleConfigurationsSet[key];
+          addToSelects(oneConfig);
+        }
+      }
+      if (config) {
+        if(config["configName"]) {
+          completeConfig.value = config["configName"];
+          configChange(completeConfig.value);
+        } else {
+          oauthUrlNames.value = config.domain;
+          oauthNames.value = config.clientId;
+        }
+      } else {
+        completeConfig.value = defaultConfigurationName;
+        configChange(completeConfig.value);
+      }
+    }
+
+    function addToSelects(oneConfig) {
+      var key = oneConfig["configName"];
+      exampleConfigurationsSet[key] = oneConfig;
+
+      var oauthNames = document.getElementById("oauth_names");
+      var oauthUrlNames = document.getElementById("oauth_url_names");
+      var configNames = document.getElementById("config_names");
+
+      addToSelection(oneConfig, key, "clientId", oauthNames);
+      addToSelection(oneConfig, key, "domain", oauthUrlNames);
+      addToSelection(oneConfig, key, "configName", configNames);
+    }
+
+    function addToSelection(oneConfig, key, optionName, dataList) {
+      var key_config = key + optionName;
+      var configQResult = dataList.querySelector('option[id="'+key_config+'"]');
+      if(oneConfig[optionName] ) {
+        var opt3 = configQResult;
+        if(opt3 === null) {
+          opt3 = document.createElement("option");
+        }
+        opt3.value = oneConfig[optionName];
+        opt3.id = key_config;
+        opt3.innerHTML = oneConfig[optionName]; // whatever property it has
+        // then append it to the select element
+        dataList.appendChild(opt3);
+      }
+    }
+
+    function configChange(key) {
+      var clientId = document.getElementById("clientId_oauth");
+      var domain = document.getElementById("cloverUrl_oauth");
+      if(exampleConfigurationsSet[key]) {
+        domain.value = exampleConfigurationsSet[key].domain;
+        clientId.value = exampleConfigurationsSet[key].clientId;
+      }
+    }
+    function resetPreviousOnInput(theInput) {
+      theInput['previousValue'] = null;
+    }
+
+
+    function clearInputOnFocus(theInput) {
+      theInput['previousValue']=theInput.value;theInput.value='';
+    }
+
+    function restoreInputOnBlur (theInput) {
+      if(theInput.value=='' && theInput['previousValue'])theInput.value=theInput['previousValue'];
+    }
+
+    function writeConfigurationOptionsToCookie() {
+      var cvalue = JSON.stringify(exampleConfigurationsSet);
+      var exdays = 2;
+      Clover.setCookie("CLOVER_EXAMPLE_CONFIGS", cvalue, exdays);
+    }
+
+    function readConfigurationOptionsFromCookie() {
+      // We have no configuration at all.  Try to get it from a cookie
+      var configuration = null;
+      var cvalue = Clover.getCookie("CLOVER_EXAMPLE_CONFIGS");
+      if (cvalue) {
+        configuration = JSON.parse(cvalue);
+      }
+      return configuration;
+    }
+
+    function resetConfigs() {
+      Clover.delete_cookie("CLOVER_EXAMPLE_CONFIGS");
+      Clover.deleteConfigurationCookie();
+      location.reload();
+    }
+
+  </script>
+
+  <!--link rel="stylesheet" type="text/css" href="appStyle.css" -->
+</head>
+
+<body onbeforeunload="shutdown()" onload="initStuff()">
+
+<div id="user_feedback" class="userFeedback"></div><br>
+
+<br/>
+<!-- Let the user enter their app id and the clover server (it might be a dev server, or their own) -->
+<div id="ouauth_config">
+  <p>
+    Select the Clover environment to pair to.<br/>
+    These are example configurations for example applications.<br/>
+    The applications represented by the 'Client ID' must be installed to the merchant that authenticates
+    to Clover.<br/>
+    You can change the configurations, or you can add new configurations.<br/>
+    nbsp;<br/>
+    To add a new configuration:<br/>
+  <ol>
+  <li>Enter a <b>Configuration Name</b> that is not in the list (using an existing one will change it).</li>
+  <li>Enter the <b>Clover Server URL</b> for the Clover environment you wish to test against.</li>
+  <li>Enter the <b>Client ID</b> for the Clover application that exists on the Clover server you selected</li>
+  <li>When you select <b>Authenticate to Clover</b> the new configuration will be stored.</li>
+  </ol>
+  <br/>
+
+  </p>
+  Configuration Name:
+  <input list="config_names" name="complete_config"
+         id="complete_config"
+         oninput="resetPreviousOnInput(this);configChange(this.value)"
+         onfocus="clearInputOnFocus(this)"
+         onblur="restoreInputOnBlur(this)"
+  />
+  <datalist id="config_names"></datalist>
+  <br/>
+  Clover Server URL:
+  <input list="oauth_url_names" style="width: 200px;" name="cloverUrl_oauth" id="cloverUrl_oauth"
+         oninput="resetPreviousOnInput(this)"
+         onfocus="clearInputOnFocus(this)"
+         onblur="restoreInputOnBlur(this)"
+  />
+  <datalist id="oauth_url_names"></datalist>
+  <br/>
+  Client ID:
+  <input list="oauth_names" style="width: 200px;" name="clientId_oauth" id="clientId_oauth"
+         oninput="resetPreviousOnInput(this)"
+         onfocus="clearInputOnFocus(this)"
+         onblur="restoreInputOnBlur(this)"
+  />
+  <datalist id="oauth_names"></datalist>
+  <br/>
+  <p>
+    When you authenticate, the browser will navigate to the Clover environment, and the merchant
+    will need to log in to Clover.  Once the merchant has logged in Clover will redirect the merchant
+    back to the application.  <br/>
+    <button id="checkOauth" onclick="checkOAuth()">Authenticate to Clover</button><br/>
+  </p>
+  <p>
+    You can reset the configurations to erase any changes you may have made to them.  This
+    will remove all customizations, and any saved device connection inforation.<br/>
+    <button onclick="resetConfigs()">Reset Configurations</button><br/>
+  </p>
+</div>
+<!-- A container to put the device(s) into to allow the user to select one for use -->
+<div id="device_box" style="display:none">
+  <div>
+    <div class="device_header">Devices for Merchant <span id="merchant_name"></span></div>
+  </div>
+  <form id="deviceForm">
+    <div id="id01"></div>
+  </form>
+</div>
+<div id="example_home_link" style="display:none">
+  <a href="/">Main example home</a>
+</div>
+<!-- controls to 'pair' or 'unpair' the device -->
+<p id="pair_device" style="display:none">
+  <button id="pair_button" onclick="handshakeDevice(getSelectedDevice())">Pair Device</button>
+
+<script>
+  /**
+   * This is the configuration for the app.  These values must be set.
+   *
+   * The clientId is the web app id for your clover application.
+   * The domain is the url to the clover server
+   */
+  // the map of available devices
+  var deviceBySerial;
+  var clover;
+
+  var config = Clover.loadConfigurationFromCookie("CLOVER_DEFAULT");
+  if(config) {
+    var cloverOAuth = new CloverOAuth(config);
+    if (!cloverOAuth.hasToken()) {
+      // Get user to enter clientId and domain
+    }
+    else {
+      displayUIFeedBack("Log in to Clover Successful.");
+      disable("ouauth_config");
+      //******************************************************
+      /**
+       * Trying to avoid third party javascript.  This is a simple interface used to make the rest calls.
+       *
+       * It is a wrapper over a XMLHTTP instance.
+       */
+      var xmlHttpSupport = new XmlHttpSupport();
+      //******************************************************
+      // Endpoints for the REST services
+      var endpoints = new Endpoints(cloverOAuth);
+
+      // Load the Merchant
+      var merchantUrl = endpoints.getMerchantEndpoint(cloverOAuth.getURLParams()["merchant_id"]);
+      xmlHttpSupport.getData(merchantUrl,
+          function(merchant) {
+            enable("device_box");
+            displayMerchant(merchant);
+            // Load the devices for the merchant
+            var devicesUrl = endpoints.getDevicesEndpoint(cloverOAuth.getURLParams()["merchant_id"]);
+            xmlHttpSupport.getData(devicesUrl, displayDevices, console.log.bind(console));
+          },
+          console.log.bind(console)
+      );
+
+      /**
+       * Find the device that is currently selected
+       */
+      function getSelectedDevice() {
+        var radios = document.getElementsByName('device');
+
+        for (var i = 0, length = radios.length; i < length; i++) {
+          if (radios[i].checked) {
+            // do whatever you want with the checked radio
+            return deviceBySerial[radios[i].value];
+          }
+        }
+        return null;
+      }
+
+      /**
+       * Initiate contact with the device.
+       *
+       * This involves a post to the clover server REST endpoint, which will provide us with
+       * the websocket connection information.
+       */
+      function handshakeDevice(selectedDevice) {
+        // The id of the device does not have dashes in this communication.  Remove them.
+        var noDashesDeviceId = selectedDevice.id.replace(/-/g, "");
+
+        // This is the data posted to tell the server we want to create a connection
+        // to the device
+        var deviceContactInfo = {
+          deviceId: noDashesDeviceId,
+          isSilent: true
+        };
+
+        var merchantId = cloverOAuth.getURLParams()["merchant_id"];
+
+        displayUIFeedBack("Contacting the clover server with a request to talk to the device...");
+
+        // Do a REST call to tell the server we want to open comms to the device.  This requires
+        // the device contact info above.
+        xmlHttpSupport.postData(endpoints.getAlertDeviceEndpoint(merchantId),
+            function (data) {
+              // The format of the data received is:
+              //{
+              //    'sent': true | false,
+              //    'host': web_socket_host,
+              //    'token': token_to_link_to_the_device
+              //}
+              // Use this data to build the web socket url
+              // Note "!data.hasOwnProperty('sent')" is included to allow for
+              // backwards compatibility.  If the property is NOT included, then
+              // we will assume an earlier version of the protocol on the server,
+              // and assume that the notification WAS SENT.
+              if (!data.hasOwnProperty('sent') || data.sent) {
+                var url = data.host + Endpoints.WEBSOCKET_PATH + '?token=' + data.token;
+
+                var clover = new Clover(getConfig());
+                // device.contactDevice(url);
+                clover.initDeviceConnection(
+                    function(error, message) {
+                      if(error) {
+                        displayUIFeedBack(error);
+                      } else {
+                        disable("device_box");
+                        disable('pair_device');
+                        enable("example_home_link");
+                        displayUIFeedBack("Device communication verified, and configuration is stored. " +
+                            "Return to the main examples page to run the examples.");
+                      }
+                    }
+                );
+              } else {
+                displayUIFeedBack("Device is not connected to push server, cannot create connection");
+              }
+            },
+            function (error) {
+              console.log(error);
+            }, deviceContactInfo
+        );
+      }
+    }
+  }
+
+  function deviceClicked(element) {
+    enable('pair_device');
+    displayUIFeedBack("Pair to the device to verify communication with the Cloud Pay Display.");
+  }
+
+  function shutdown() {
+    writeConfigurationOptionsToCookie();
+    if (clover) {
+      try {
+        clover.close();
+      } catch (e) {
+      }
+    }
+  }
+
+  function getConfig() {
+    return {
+      clientId: cloverOAuth.clientId,
+      domain: cloverOAuth.configuration.domain,
+      oauthToken: cloverOAuth.getAccessToken(),
+      merchantId: cloverOAuth.getURLParams()["merchant_id"],
+      deviceSerialId: getSelectedDevice().serial
+    };
+  }
+
+  function checkOAuth() {
+    var newConfig = {
+      clientId: document.getElementById("clientId_oauth").value, // this is the app id
+      domain: document.getElementById("cloverUrl_oauth").value, // this is the url to the clover domain (http://www.clover.com)
+      configName: document.getElementById("complete_config").value
+    };
+    addToSelects(newConfig);
+
+    var cloverOAuth = new CloverOAuth(newConfig);
+    Clover.writeConfigurationToCookie(newConfig);
+    var token = cloverOAuth.getAccessToken();
+    if(token) {
+      location.reload();
+    }
+  }
+
+  // UI Stuff
+  function enable(id) {
+    document.getElementById(id).style.display = 'block';
+  }
+
+  // UI Stuff
+  function disable(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  // UI Stuff - Sow the user what is going on
+  function displayUIFeedBack(infoMessage) {
+    var user_feedback = document.getElementById("user_feedback");
+    user_feedback.innerHTML = infoMessage;
+  }
+
+  function displayMerchant(merchant) {
+    if(merchant['name']) {
+      var merchantName = document.getElementById("merchant_name");
+      merchantName.innerHTML = merchant['name'];
+    }
+  }
+
+  /**
+   * Display a set of devices
+   * @param devicesVX
+   */
+  function displayDevices(devicesVX) {
+    var devices = null;
+    deviceBySerial = {};
+    // depending on the version of the call, the devices might be in a slightly different format.
+    // We would need to determine what devices were capable of doing what we want.  This means we
+    // need to know if the device has the websocket connection enabled.  The best way to do this is
+    // to make a different REST call, but we could filter the devices here.
+    if (devicesVX.hasOwnProperty('devices')) {
+      devices = devicesVX.devices;
+    }
+    else if (devicesVX.hasOwnProperty('elements')) {
+      devices = devicesVX.elements;
+    }
+    var out = "";
+    var i;
+    for (i = 0; i < devices.length; i++) {
+      var style = 'device_enabled';
+      if (devices[i].model != "Clover_C100") {
+        out += "<div id='" + devices[i].serial + "_status' class='" + style + "'>" +
+            '<input type="radio" name="device" value="' +
+            devices[i].serial + '"  ' +
+            ' onclick="deviceClicked(this)"/>' +
+            devices[i].model + " " + devices[i].serial +
+            '</div><br>';
+      }
+      deviceBySerial[devices[i].serial] = devices[i];
+    }
+    document.getElementById("id01").innerHTML = out;
+    if(devices.length > 0) {
+      displayUIFeedBack("Log in to Clover Successful.  List of devices retrieved.  Select a device.");
+    } else {
+      displayUIFeedBack("Log in to Clover Successful.  No devices found for the merchant.");
+    }
+  }
+</script>
+</body>
+</html>
