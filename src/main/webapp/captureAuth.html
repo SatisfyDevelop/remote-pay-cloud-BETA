@@ -1,0 +1,115 @@
+<html>
+<head>
+
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+
+    <!-- following for testing only -->
+   <script src="testConfigBase.js"></script>
+
+
+  <script src="src/xmlHttpSupport.js"></script>
+  <script src="src/CardEntryMethods.js"></script>
+  <script src="src/CloverOAuth.js"></script>
+  <script src="src/CloverError.js"></script>
+  <script src="src/Clover.js"></script>
+  <script src="src/WebSocketDevice.js"></script>
+  <script src="src/Endpoints.js"></script>
+  <script src="src/CloverID.js"></script>
+  <script src="src/eventemitter3_v1_1_1.js"></script>
+  <script src="src/RemoteMessageBuilder.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="appStyle.css">
+</head>
+
+<body onbeforeunload="clover.close()">
+
+<p>
+  This is an example of the Clover High Level Cloud API. It relies on the device to be running the
+  Cloud Pay Display app. It uses the device serial id to identify the device. It makes a connection to
+  a device, and captures an authorization made in an earlier operation.  The capture adjusts the amount
+  to $110.00 with a tip of $11.00. The result of the transaction is displayed below.
+</p>
+
+<div id="refund_config">
+  Payment ID: <input type="text" id="paymentIdText"/><br/>
+  Amount (100 is $1): <input type="text" id="amountText"/><br/>
+  Tip Amount (100 is $1): <input type="text" id="tipAmountText"/><br/>
+  <button id="doCapture" style="display:none" onclick="doCapture()">Do Capture</button>
+</div>
+
+<!-- this is a place to talk about what is happening while the example is being run -->
+<div id="uiFeedback" style="height: 400px;">
+</div>
+
+<script>
+
+  // Create the Clover object to communicate with the device
+  var clover = new Clover();
+  // Following will try to handle when incomplete configurations are encountered.
+  clover.incompleteConfiguration = exampleIncompleteConfigurationHandler;
+
+  // Start communication
+  // Pass the function that should be called when the device is ready.
+  clover.initDeviceConnection(deviceReady);
+
+  function deviceReady(error) {
+    if (error) {
+      var resultDisplay = "";
+      resultDisplay += "<pre>" + JSON.stringify(error, null, 4) + "</pre>";
+      document.getElementById("uiFeedback").innerHTML = resultDisplay;
+    } else {
+      enable("doCapture");
+    }
+  }
+
+  // UI Stuff
+  function enable(id) {
+    document.getElementById(id).style.display = 'block';
+  }
+
+  // UI Stuff
+  function disable(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  /**
+   * The call to do the refund.
+   *
+   */
+  function doCapture() {
+    var paymentId = document.getElementById("paymentIdText").value;
+    if (paymentId) {
+      var amount = document.getElementById("amountText").checked;
+      var tipAmount =  document.getElementById("tipAmountText").checked;
+
+      var capturePreAuthRequest = {};
+      capturePreAuthRequest.tipAmount = tipAmount;
+      capturePreAuthRequest.amount = amount;
+      capturePreAuthRequest.paymentId = paymentId;
+      clover.capturePreAuth(capturePreAuthRequest, resultCallback);
+
+    } else {
+      var resultDisplay = "No payment id";
+      document.getElementById("uiFeedback").innerHTML = resultDisplay;
+    }
+  }
+
+  /**
+   *
+   * @param error - adheres to the node.js style of error first callbacks.
+   * @param resultData - the result of the operation
+   * @see http://fredkschott.com/post/2014/03/understanding-error-first-callbacks-in-node-js/
+   */
+  function resultCallback(error, resultData) {
+    // do something with this.
+    var resultDisplay = "";
+    if (error)resultDisplay += "<pre>" + JSON.stringify(error, null, 4) + "</pre>";
+    resultDisplay += "<pre>" + JSON.stringify(resultData, null, 4) + "</pre>";
+    document.getElementById("uiFeedback").innerHTML = resultDisplay;
+  }
+</script>
+
+</body>
+</html>

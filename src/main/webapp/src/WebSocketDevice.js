@@ -73,7 +73,7 @@ function WebSocketDevice(allowOvertakeConnection, friendlyId) {
     this.reContactDevice = function(ws_address) {
         var me = this;
         // Reset the timestamp values
-        this.pongReceivedMillis = new Date().getTime();
+        // this.pongReceivedMillis = new Date().getTime();
         this.pingSentMillis = new Date().getTime();
 
         /*
@@ -750,6 +750,23 @@ WebSocketDevice.prototype.sendKeyPress = function(keyCode, ackId) {
     this.sendMessage(lanMessage);
 }
 
+/**
+ *
+ * @param [ackId] - an optional id for the message.  If set then the break will be acknowledged,
+ *  otherwise there will be no response.
+ */
+WebSocketDevice.prototype.sendBreak = function(ackId) {
+    var payload = {
+
+    };
+    var lanMessage = this.messageBuilder.buildBreak(payload);
+    // If an id is included, then an "ACK" message will be sent for this message
+    if(ackId) lanMessage.id = ackId;
+
+    this.sendMessage(lanMessage);
+}
+
+
 //
 /**
  * Send a message to start a transaction.  This will make the device display the payment screen
@@ -893,6 +910,36 @@ WebSocketDevice.prototype.sendRefund = function(orderId, paymentId, amount, ackI
 }
 
 /**
+ * Refund a payment, partial or complete
+ *
+ * @param {string} orderId - the id for the order the refund is against
+ * @param {string} paymentId - the id for the payment on the order the refund is against
+ * @param {number} [amount] - the amount that will be refunded.
+ * @param {boolean} [fullRefund] - If true, the amount of the passed payment will be refunded.
+ * @param {string} [ackId] - an optional identifier that can be used to track an acknowledgement
+ *  to this message.  This should be a unique identifier, but this is NOT enforced in any way.
+ *  A "ACK" message will be returned with this identifier as the message id if this
+ *  parameter is included.  This "ACK" message will be in addition to any other message
+ *  that may be generated as a result of this message being sent.
+ */
+WebSocketDevice.prototype.sendRefundV2 = function(orderId, paymentId, amount, fullRefund, ackId) {
+    var payload = {};
+    payload.orderId = orderId;
+    payload.paymentId = paymentId;
+    if(fullRefund) {
+        payload.fullRefund = fullRefund;
+    } else if(amount) {
+        payload.amount = amount;
+    }
+    payload.version = 2;
+    var lanMessage = this.messageBuilder.buildRefund(payload);
+    // If an id is included, then an "ACK" message will be sent for this message
+    if(ackId) lanMessage.id = ackId;
+
+    this.sendMessage(lanMessage);
+}
+
+/**
  * Capture a preauthorization
  *
  * @param {string} orderId - the id for the order the payment was against
@@ -970,8 +1017,11 @@ WebSocketDevice.prototype.sendTipAdjust = function(orderId, paymentId, tipAmount
 }
 
 /**
- * Show the recipt options screen for a specific ordereid/paymentid.
+ * Show the receipt options screen for a specific orderid/paymentid.
  *
+ * @deprecated - this function will result in a Finish_OK message being returned.
+ *  Use sendShowPaymentReceiptOptionsV2 instead.  sendShowPaymentReceiptOptionsV2
+ *  results in only the UI_STATE messages, which is preferable.
  * @param {string} orderId - the id for the order
  * @param {string} paymentId - the id for the payment on the order
  * @param {string} [ackId] - an optional identifier that can be used to track an acknowledgement
@@ -984,6 +1034,30 @@ WebSocketDevice.prototype.sendShowPaymentReceiptOptions = function(orderId, paym
     var payload = {};
     payload.orderId = orderId;
     payload.paymentId = paymentId;
+
+    var lanMessage = this.messageBuilder.buildShowPaymentReceiptOptions(payload);
+    // If an id is included, then an "ACK" message will be sent for this message
+    if(ackId) lanMessage.id = ackId;
+
+    this.sendMessage(lanMessage);
+}
+
+/**
+ * Show the receipt options screen for a specific orderid/paymentid.
+ *
+ * @param {string} orderId - the id for the order
+ * @param {string} paymentId - the id for the payment on the order
+ * @param {string} [ackId] - an optional identifier that can be used to track an acknowledgement
+ *  to this message.  This should be a unique identifier, but this is NOT enforced in any way.
+ *  A "ACK" message will be returned with this identifier as the message id if this
+ *  parameter is included.  This "ACK" message will be in addition to any other message
+ *  that may be generated as a result of this message being sent.
+ */
+WebSocketDevice.prototype.sendShowPaymentReceiptOptionsV2 = function(orderId, paymentId, ackId) {
+    var payload = {};
+    payload.orderId = orderId;
+    payload.paymentId = paymentId;
+    payload.version = 2;
 
     var lanMessage = this.messageBuilder.buildShowPaymentReceiptOptions(payload);
     // If an id is included, then an "ACK" message will be sent for this message
