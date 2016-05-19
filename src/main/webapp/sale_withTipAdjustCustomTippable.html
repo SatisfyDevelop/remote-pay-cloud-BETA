@@ -60,7 +60,8 @@
     } else {
       var mySale = {
         "amount": 12345, // null tipAmount makes auth - right?
-        "tippableAmount": 10000 // - the amount used when calculating tips
+        "tippableAmount": 10000, // - the amount used when calculating tips
+        "requestId": CloverID.getNewId()
       }
 
       // Call the device to take payment, after the payment is complete, call the
