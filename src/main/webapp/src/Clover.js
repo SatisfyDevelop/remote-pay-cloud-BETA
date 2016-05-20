@@ -1834,7 +1834,7 @@ function Clover(configuration) {
  *
  * @type {string}
  */
-Clover.RemoteSourceSDK = "com.clover.cloverconnector.cloud.beta";
+Clover.RemoteSourceSDK = "com.clover.cloverconnector.cloud";
 
 // Below are utility methods that can be located anywhere.
 // Want to make sure we have the namespace, so putting in Clover.
