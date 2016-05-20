@@ -1,3 +1,5 @@
+CLOVER_CLOUD_SDK_VERSION = "0.1.0";
+
 /**
  * Clover API for external Systems
  *
@@ -6,7 +8,15 @@
  */
 function Clover(configuration) {
     this.configuration = configuration;
-    if (!this.configuration) {
+    if(configuration){
+        try {
+            // Make sure we do not change the passed object, make a copy.
+            this.configuration = JSON.parse(JSON.stringify(configuration));
+        } catch(e) {
+            log.error("Could not load configuration", e);
+            throw e;
+        }
+    } else {
         this.configuration = {};
     }
     if(this.configuration.debugConfiguration) {
@@ -18,7 +28,9 @@ function Clover(configuration) {
         Boolean(this.configuration["allowOvertakeConnection"]);
 
     this.device = new WebSocketDevice(this.configuration.allowOvertakeConnection, this.configuration["friendlyId"]);
-    this.device.messageBuilder = new RemoteMessageBuilder("com.clover.remote.protocol.lan");
+    this.device.messageBuilder = new RemoteMessageBuilder("com.clover.remote.protocol.lan",
+      Clover.RemoteSourceSDK + ":" + CLOVER_CLOUD_SDK_VERSION,
+      this.configuration["clientId"] );
     // Echo all messages sent and received.
     this.device.echoAllMessages = false;
     this.pauseBetweenDiscovery = 3000;
@@ -255,7 +267,7 @@ function Clover(configuration) {
                 // We already know that we have the token, but we need to check for the
                 // domain and merchantId.
                 if(!this.configuration.merchantId) {
-                    this.configuration.merchantId = this.cloverOAuth.getURLParams()["merchant_id"];
+                    this.configuration.merchantId = this.getCloverOAuth().getURLParams()["merchant_id"];
                 }
                 if(!this.configuration.merchantId) {
                     // We do not have enough info to initialize.  Error out
@@ -264,8 +276,6 @@ function Clover(configuration) {
                     return;
                 }
                 if (this.configuration.domain) {
-                    // We need the device id of the device we will contact.
-                    // Either we have it...
                     var xmlHttpSupport = new XmlHttpSupport();
                     var inlineEndpointConfig = {"configuration": {}};
                     var me = this;
@@ -275,6 +285,8 @@ function Clover(configuration) {
                     inlineEndpointConfig.configuration.domain = this.configuration.domain;
                     var endpoints = new Endpoints(inlineEndpointConfig);
 
+                    // We need the device id of the device we will contact.
+                    // Either we have it...
                     if (this.configuration.deviceId) {
                         var noDashesDeviceId = this.configuration.deviceId.replace(/-/g, "");
                         // this is the uuid for the device
@@ -304,10 +316,17 @@ function Clover(configuration) {
                                 // backwards compatibility.  If the property is NOT included, then
                                 // we will assume an earlier version of the protocol on the server,
                                 // and assume that the notification WAS SENT.
+                                if(!me.configuration.clientId) {
+                                    // We use the clientid in each message now.  Need to have a ref here.
+                                    var paramMap = me.getCloverOAuth().getURLParams();
+                                    me.configuration.clientId = paramMap["client_id"];
+                                }
                                 if (!data.hasOwnProperty('sent') || data.sent) {
                                     var url = data.host + Endpoints.WEBSOCKET_PATH + '?token=' + data.token;
                                     me.device.messageBuilder = new RemoteMessageBuilder(
-                                        "com.clover.remote.protocol.websocket");
+                                        "com.clover.remote.protocol.websocket",
+                                        Clover.RemoteSourceSDK + ":" + CLOVER_CLOUD_SDK_VERSION,
+                                        me.configuration["clientId"] );
 
                                     console.log("Server responded with information on how to contact device. " +
                                         "Opening communication channel...");
@@ -405,10 +424,9 @@ function Clover(configuration) {
                 // If we need to go get it, then we will need the clientId
                 // and the domain
                 if (this.configuration.clientId && this.configuration.domain) {
-                    this.cloverOAuth = new CloverOAuth(this.configuration);
                     // This may cause a redirect
                     this.persistConfiguration();
-                    this.configuration.oauthToken = this.cloverOAuth.getAccessToken();
+                    this.configuration.oauthToken = this.getCloverOAuth().getAccessToken();
                     // recurse
                     this.initDeviceConnectionInternal(callBackOnDeviceReady);
                 } else {
@@ -419,7 +437,19 @@ function Clover(configuration) {
                 }
             }
         }
-    }
+    };
+
+    /**
+     * Get the clover oauth instace here.  Lazy instantiation
+     * @private
+     * @returns {CloverOAuth|*}
+     */
+    this.getCloverOAuth = function() {
+        if(!this.cloverOAuth) {
+            this.cloverOAuth = new CloverOAuth(this.configuration);
+        }
+        return this.cloverOAuth;
+    };
 
     /**
      * Loads the configuration that was stored.  This implementation just grabs the
@@ -516,6 +546,8 @@ function Clover(configuration) {
     this.contactDevice = function (callBackOnDeviceReady) {
         var me = this;
         this.discoveryResponseReceived = false;
+
+        this.device.messageBuilder.remoteApplicationID = this.configuration.clientId;
 
         // Holds all the callbacks so that they can be removed later, if
         // They need to be.  Callbacks need to be removed in the 'end states'
@@ -1798,6 +1830,12 @@ function Clover(configuration) {
     //}
 }
 
+/**
+ *
+ * @type {string}
+ */
+Clover.RemoteSourceSDK = "com.clover.cloverconnector.cloud.beta";
+
 // Below are utility methods that can be located anywhere.
 // Want to make sure we have the namespace, so putting in Clover.
 /**
@@ -1903,7 +1941,10 @@ Clover.deleteConfigurationCookie = function () {
  * even no configuration) is specified.
  */
 Clover.minimalConfigurationPossibilities = [
-    [{"name":"deviceURL", "description": "the fully qualified websocket URL to connect to the device."}],
+    [
+        {"name":"deviceURL", "description": "the fully qualified websocket URL to connect to the device."},
+        {"name":"clientId", "description": "the App ID for the app being used to connect to."}
+    ],
     [
         {"name":"clientId", "description": "the App ID for the app being used to connect to."},
         {"name":"domain", "description": "the Clover base server url.  Typically https://www.clover.com/"},
