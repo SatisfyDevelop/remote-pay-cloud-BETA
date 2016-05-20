@@ -56,7 +56,8 @@
     } else {
       var mySale = {
         "amount": 15000,
-        "isPreAuth": true
+        "isPreAuth": true,
+        "requestId": CloverID.getNewId()
       }
       // Do the pre authorization
       clover.preAuth(mySale, resultCallback);

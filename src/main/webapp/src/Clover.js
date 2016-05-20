@@ -601,7 +601,9 @@ function Clover(configuration) {
         if (txInfo.hasOwnProperty('requestId') && txInfo.requestId != null) {
             externalPaymentId = txInfo.requestId;
         } else {
-            externalPaymentId = CloverID.getNewId();
+            /* Clover-20436 */
+            // externalPaymentId = CloverID.getNewId();
+            throw new CloverError(CloverError.INVALID_DATA, "requestId is required");
         }
         txInfo.externalPaymentId = externalPaymentId;
         return txInfo;
@@ -617,7 +619,12 @@ function Clover(configuration) {
      *  passed in as part of the saleInfo.  If it is not passed in then this will be a new generated value.
      */
     this.sale = function (saleInfo, saleRequestCallback) {
-        this.ensureExternalPaymentId(saleInfo);
+        try {
+            this.ensureExternalPaymentId(saleInfo);
+        } catch(cloverError) {
+            saleRequestCallback(cloverError, saleInfo);
+            return null;
+        }
         // For a sale, force the tip to be set
         if (!saleInfo.hasOwnProperty("tipAmount")) {
             saleInfo["tipAmount"] = 0;
@@ -638,7 +645,12 @@ function Clover(configuration) {
      *  passed in as part of the saleInfo.  If it is not passed in then this will be a new generated value.
      */
     this.auth = function (saleInfo, saleRequestCallback) {
-        this.ensureExternalPaymentId(saleInfo);
+        try {
+            this.ensureExternalPaymentId(saleInfo);
+        } catch(cloverError) {
+            saleRequestCallback(cloverError, saleInfo);
+            return null;
+        }
         // For a auth, force the tip to be set to null
         if (saleInfo.hasOwnProperty("tipAmount")) {
             delete saleInfo.tipAmount;
@@ -659,7 +671,12 @@ function Clover(configuration) {
      *  passed in as part of the saleInfo.  If it is not passed in then this will be a new generated value.
      */
     this.preAuth = function (saleInfo, saleRequestCallback) {
-        this.ensureExternalPaymentId(saleInfo);
+        try {
+            this.ensureExternalPaymentId(saleInfo);
+        } catch(cloverError) {
+            saleRequestCallback(cloverError, saleInfo);
+            return null;
+        }
         delete saleInfo.tipAmount;
         if (this.verifyValidAmount(saleInfo, saleRequestCallback)) {
             this.internalTx(saleInfo, saleRequestCallback, this.preAuth_payIntentTemplate(), "payment");
@@ -674,6 +691,12 @@ function Clover(configuration) {
      * @param {Clover~transactionRequestCallback} refundRequestCallback
      */
     this.refund = function (refundInfo, refundRequestCallback) {
+        try {
+            this.ensureExternalPaymentId(refundInfo);
+        } catch(cloverError) {
+            refundRequestCallback(cloverError, refundInfo);
+            return null;
+        }
         if (this.verifyValidAmount(refundInfo, refundRequestCallback)) {
             refundInfo.amount = Math.abs(refundInfo.amount) * -1;
             this.internalTx(refundInfo, refundRequestCallback, this.refund_payIntentTemplate(), "credit");

@@ -60,7 +60,8 @@
   function doSale(vaultedCard) {
     var mySale = {
       "amount": 12345, //the amount of a sale, including tax
-      "vaultedCard": vaultedCard
+      "vaultedCard": vaultedCard,
+      "requestId": CloverID.getNewId()
     }
 
     // Call the device to take payment, after the payment is complete, call the
