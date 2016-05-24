@@ -315,6 +315,8 @@ function LanMethod() {
 };
 /** The transaction start method type */
 LanMethod.TX_START = "TX_START";
+/** The response to the tX_START */
+LanMethod.TX_START_RESPONSE = "TX_START_RESPONSE";
 /** The key pressed method type */
 LanMethod.KEY_PRESS = "KEY_PRESS";
 /** The user interface state change method type */
