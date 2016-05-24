@@ -833,14 +833,14 @@ function Clover(configuration) {
         allCallBacks.push({"event": WebSocketDevice.DEVICE_ERROR, "callback": deviceErrorCB});
 
         var txStartCB = function (message) {
-            // {"messageParameters":["911c53218e4c4bb0b510b828afdd9597"],"result":"DUPLICATE","success":false,"method":"TX_START_RESPONSE","version":1}
+            // {"externalPaymentId":"911c53218e4c4bb0b510b828afdd9597","result":"DUPLICATE","success":false,"method":"TX_START_RESPONSE","version":1}
             var payload = JSON.parse(message.payload);
             if(payload.result != "SUCCESS") {
                 // Remove obsolete listeners.  This is an end state
                 me.device.removeListeners(allCallBacks);
                 var error = new CloverError(CloverError.INVALID_DATA, "Transaction failed to start with code: " +
-                  payload.result);
-                txnRequestCallback(error, payload.messageParameters);
+                  payload.result + " and external id: " + payload.externalPaymentId);
+                txnRequestCallback(error, payload.externalPaymentId);
             }
         };
         this.device.on(LanMethod.TX_START_RESPONSE, txStartCB);
