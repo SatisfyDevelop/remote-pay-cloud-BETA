@@ -6,9 +6,11 @@
  * @param {string} packagename -the packagename used in constructing the messages
  * @constructor
  */
-function RemoteMessageBuilder(defaultPackageName) {
+function RemoteMessageBuilder(defaultPackageName, remoteSourceSDK, remoteApplicationID) {
 
     this.defaultPackageName = defaultPackageName;
+    this.remoteSourceSDK = remoteSourceSDK;
+    this.remoteApplicationID = remoteApplicationID;
 
     /**
      * Build a message given the inputs
@@ -28,6 +30,10 @@ function RemoteMessageBuilder(defaultPackageName) {
         if (!payload)payload = {"method": method};
         lanMessage.payload = JSON.stringify(payload);
         lanMessage.type = RemoteMessageBuilder.COMMAND;
+
+        lanMessage.remoteSourceSDK = this.remoteSourceSDK;
+        lanMessage.remoteApplicationID = this.remoteApplicationID;
+
         if (type)lanMessage.type = type;
         // There is an 'id' in the java instance, but I do not see it being used right now.
         return lanMessage;
