@@ -12,6 +12,10 @@ function RemoteMessageBuilder(defaultPackageName, remoteSourceSDK, remoteApplica
     this.remoteSourceSDK = remoteSourceSDK;
     this.remoteApplicationID = remoteApplicationID;
 
+    // generate a single uuid prefix for use with this builder instance.
+    this.ackUuidPrefix = CloverID.guid();
+    this.ackIdCounter = 0;
+
     /**
      * Build a message given the inputs
      *
@@ -23,6 +27,9 @@ function RemoteMessageBuilder(defaultPackageName, remoteSourceSDK, remoteApplica
      */
     this.buildRemoteMessage = function (method, type, payload, packageName) {
         var lanMessage = {};
+        // Note, this may be overwritten later...
+        lanMessage.id = this.generateNextAckId();
+
         if (method) lanMessage.method = method;
         lanMessage.packageName = this.defaultPackageName; //"com.clover.remote.protocol.websocket";
         if (packageName)lanMessage.packageName = packageName;
@@ -37,6 +44,10 @@ function RemoteMessageBuilder(defaultPackageName, remoteSourceSDK, remoteApplica
         if (type)lanMessage.type = type;
         // There is an 'id' in the java instance, but I do not see it being used right now.
         return lanMessage;
+    };
+
+    this.generateNextAckId = function() {
+      return this.ackUuidPrefix + "_" + (++this.ackIdCounter);
     };
 
     /**
@@ -337,6 +348,8 @@ function LanMethod() {
 };
 /** The transaction start method type */
 LanMethod.TX_START = "TX_START";
+/** The response to the tX_START */
+LanMethod.TX_START_RESPONSE = "TX_START_RESPONSE";
 /** The key pressed method type */
 LanMethod.KEY_PRESS = "KEY_PRESS";
 /** The user interface state change method type */
