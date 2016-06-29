@@ -997,7 +997,7 @@ function Clover(configuration) {
             }
         };
         // Generate the uuid so we can filter properly
-        uuid = CloverID.guid();
+        uuid = this.device.messageBuilder.generateNextAckId();
         // Register the callback.
         this.device.on(LanMethod.ACK, genericAckCallback);
         // return the uuid so the caller of this function can use
