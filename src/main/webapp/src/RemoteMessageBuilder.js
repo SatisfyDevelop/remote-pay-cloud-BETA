@@ -71,6 +71,28 @@ function RemoteMessageBuilder(defaultPackageName, remoteSourceSDK, remoteApplica
     }
 
     /**
+     * Builds a payment confirmed message
+     *
+     * @param {json} payload - the payment confirmation object
+     * @returns {json} the constructed message
+     */
+    this.buildConfirmPayment = function (payload) {
+        payload.method = LanMethod.PAYMENT_CONFIRMED;
+        return this.buildRemoteMessage(LanMethod.PAYMENT_CONFIRMED, RemoteMessageBuilder.COMMAND, payload);
+    }
+
+    /**
+     * Builds a payment rejected message
+     *
+     * @param {json} payload - the payment rejection object
+     * @returns {json} the constructed message
+     */
+    this.buildRejectPayment = function (payload) {
+        payload.method = LanMethod.PAYMENT_REJECTED;
+        return this.buildRemoteMessage(LanMethod.PAYMENT_REJECTED, RemoteMessageBuilder.COMMAND, payload);
+    }
+
+    /**
      * Builds a signature verified message
      *
      * @param {json} payload - the signature verified object
@@ -393,6 +415,12 @@ LanMethod.VAULT_CARD_RESPONSE = "VAULT_CARD_RESPONSE";
 LanMethod.CLOSEOUT_REQUEST = "CLOSEOUT_REQUEST"
 /** Message type to respond to closeout request */
 LanMethod.CLOSEOUT_RESPONSE = "CLOSEOUT_RESPONSE";
+/** Message returned when a payment is challenged.  Requires user confirmation */
+LanMethod.CONFIRM_PAYMENT_MESSAGE = "CONFIRM_PAYMENT_MESSAGE";
+/** Message sent when a challenged payment is confirmed */
+LanMethod.PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED";
+/** Message sent when a challenged payment is confirmed */
+LanMethod.PAYMENT_REJECTED = "PAYMENT_REJECTED";
 
 /**
  * The shutdown method type
