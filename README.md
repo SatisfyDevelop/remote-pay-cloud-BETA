@@ -1,3 +1,8 @@
+# ** Final Version of BETA. **
+
+## Version 1.0.0 of the Clover SDK for Javascript Integration which replaces this is a library only, unlike the BETA version which has been the repository for the library, as well as the examples of usage.  It introduces a more standard versioning, as well as usage of more standard javascript constructs, structure and directives.  It also introduces hosting on NPM of the library.
+---
+
 Clover Cloud Web Socket Connection Web Application
 ====================================================
 The purpose of this repository is to illustrate the communication of your web application to [Clover Mini](https://www.clover.com/pos-hardware/mini) to allow a merchant's customers to make payments: credit, debit, EMV contact and contactless (including Apple Pay), EBT, and more. This serves as a starting point for the JS SDK protocol integration library. Learn more about Clover integrations at [clover.com/integrations](https://www.clover.com/integrations).
