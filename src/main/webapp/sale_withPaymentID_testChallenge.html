@@ -17,11 +17,8 @@
 <p>
   This is an example of the Clover High Level Cloud API.  It relies on the device to be running the
   Cloud Pay Display app.  It uses the device id to identify the device, and a authorization token that was
-  previously obtained.  It makes a connection to a device, and charges $123.45.<br/>
-
-  Once the authorization is complete, an adjustment is made for the tip.
-
-
+  previously obtained.  It makes a connection to a device, and charges $123.45, with a tip of $1.23 ($124.68).
+  The external payment ID that will be used in the completed transaction is passed in.
   The result of the transaction is displayed below.
   <br/>
   To test reconnecting to the device and running a transaction again, select he 'Close Clover' button, then
@@ -29,7 +26,8 @@
 </p>
 
 <button onclick="clover.sendCancel(resultCallback)">Send a Cancel</button>
-  <button onclick="doTipAdjust()" id="adjustTipID" style="display:none">Adjust the auth with a $1 tip</button>
+<button onclick="clover.close()">Close Clover</button>
+<button onclick="clover.initDeviceConnection(makeASale)">Init connection and make a sale again</button>
 
 <!-- this is a place to talk about what is happening while the example is being run -->
 <div id="uiFeedback" style="height: 400px;">
@@ -44,43 +42,28 @@
 
   // Start communication
   // Pass the function that should be called when the device is ready.
-  clover.initDeviceConnection(doAuth);
-
-  // A place to hold on to the sale result
-  var saleResult=null;
+  clover.initDeviceConnection(makeASale);
 
   // This will be called when the device is ready
-  function doAuth(error) {
+  function makeASale(error) {
     if(error) {
       var resultDisplay = "";
       resultDisplay += "<pre>"+JSON.stringify(error, null, 4) + "</pre>";
       document.getElementById("uiFeedback").innerHTML = resultDisplay;
     } else {
       var mySale = {
-        "amount": 12345,
+        "amount": 12345, //the amount of a sale, including tax
+        "tipAmount": 123, // - the amount of a tip.  Added to the amount for the total.
         "requestId": CloverID.getNewId()
       }
 
+      clover.device.on(LanMethod.CONFIRM_PAYMENT_MESSAGE, askForConfirmation);
+
+
       // Call the device to take payment, after the payment is complete, call the
       // 'mySaleResult' function
-      clover.auth(mySale, resultCallback);
+      clover.sale(mySale, resultCallback);
     }
-  }
-
-  function doTipAdjust() {
-    if(saleResult.code = "SUCCESS" && canTipAdjust(saleResult.payment) ) {
-      var tipAdjustment = {
-        "orderId" : saleResult.payment.order.id,
-        "paymentId" : saleResult.payment.id,
-        "tipAmount" : 100 // $1
-      }
-      clover.tipAdjust(tipAdjustment, resultCallback);
-      disable("adjustTipID");
-    }
-  }
-
-  function canTipAdjust(payment) {
-    return (payment && payment.result == "SUCCESS" && payment.cardTransaction.type == "PREAUTH");
   }
 
   /**
@@ -91,25 +74,23 @@
   function resultCallback(error, resultData) {
     // do something with this.
     var resultDisplay = "";
-    if(error) {
-      resultDisplay += "<pre>"+JSON.stringify(error, null, 4) + "</pre>";
-    } else if(resultData.code = "SUCCESS" && canTipAdjust(resultData.payment)) {
-      saleResult = resultData;
-      enable("adjustTipID");
-    }
+    if(error)resultDisplay += "<pre>"+JSON.stringify(error, null, 4) + "</pre>";
     resultDisplay += "<pre>"+JSON.stringify(resultData, null, 4) + "</pre>";
     document.getElementById("uiFeedback").innerHTML = resultDisplay;
   }
 
-  /////////////////////////////////////////////////////
-  // UI Stuff
-  function enable(id) {
-    document.getElementById(id).style.display = 'block';
-  }
+  function askForConfirmation(resultData) {
+    payload = JSON.parse(resultData.payload);
+    payment = JSON.parse(payload.payment);
 
-  // UI Stuff
-  function disable(id) {
-    document.getElementById(id).style.display = 'none';
+    for(var i=0; i<payload.challenges.length; i++){
+      var ui_display = "<p>"+payload.challenges[i].message;
+      ui_display += "<button id='btn" + i +
+          "' onclick='clover.device.sendRejectPayment(payment, payload.challenges["+i+"].reason)'>Reject</button></p>"
+    }
+    ui_display += "<p><button id='btnY" +
+        "' onclick='clover.device.sendConfirmPayment(payment)'>Confirm Payment</button></p>";
+    document.getElementById("uiFeedback").innerHTML = ui_display;
   }
 </script>
 

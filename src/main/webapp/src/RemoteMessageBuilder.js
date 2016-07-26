@@ -6,9 +6,15 @@
  * @param {string} packagename -the packagename used in constructing the messages
  * @constructor
  */
-function RemoteMessageBuilder(defaultPackageName) {
+function RemoteMessageBuilder(defaultPackageName, remoteSourceSDK, remoteApplicationID) {
 
     this.defaultPackageName = defaultPackageName;
+    this.remoteSourceSDK = remoteSourceSDK;
+    this.remoteApplicationID = remoteApplicationID;
+
+    // generate a single uuid prefix for use with this builder instance.
+    this.ackUuidPrefix = CloverID.guid();
+    this.ackIdCounter = 0;
 
     /**
      * Build a message given the inputs
@@ -21,6 +27,9 @@ function RemoteMessageBuilder(defaultPackageName) {
      */
     this.buildRemoteMessage = function (method, type, payload, packageName) {
         var lanMessage = {};
+        // Note, this may be overwritten later...
+        lanMessage.id = this.generateNextAckId();
+
         if (method) lanMessage.method = method;
         lanMessage.packageName = this.defaultPackageName; //"com.clover.remote.protocol.websocket";
         if (packageName)lanMessage.packageName = packageName;
@@ -28,9 +37,17 @@ function RemoteMessageBuilder(defaultPackageName) {
         if (!payload)payload = {"method": method};
         lanMessage.payload = JSON.stringify(payload);
         lanMessage.type = RemoteMessageBuilder.COMMAND;
+
+        lanMessage.remoteSourceSDK = this.remoteSourceSDK;
+        lanMessage.remoteApplicationID = this.remoteApplicationID;
+
         if (type)lanMessage.type = type;
         // There is an 'id' in the java instance, but I do not see it being used right now.
         return lanMessage;
+    };
+
+    this.generateNextAckId = function() {
+      return this.ackUuidPrefix + "_" + (++this.ackIdCounter);
     };
 
     /**
@@ -62,6 +79,28 @@ function RemoteMessageBuilder(defaultPackageName) {
     this.buildSignatureVerified = function (payload) {
         payload.method = LanMethod.SIGNATURE_VERIFIED;
         return this.buildRemoteMessage(LanMethod.SIGNATURE_VERIFIED, RemoteMessageBuilder.COMMAND, payload);
+    }
+
+    /**
+     * Builds a payment confirmed message
+     *
+     * @param {json} payload - the payment confirmation object
+     * @returns {json} the constructed message
+     */
+    this.buildConfirmPayment = function (payload) {
+        payload.method = LanMethod.PAYMENT_CONFIRMED;
+        return this.buildRemoteMessage(LanMethod.PAYMENT_CONFIRMED, RemoteMessageBuilder.COMMAND, payload);
+    }
+
+    /**
+     * Builds a payment rejected message
+     *
+     * @param {json} payload - the payment rejection object
+     * @returns {json} the constructed message
+     */
+    this.buildRejectPayment = function (payload) {
+        payload.method = LanMethod.PAYMENT_REJECTED;
+        return this.buildRemoteMessage(LanMethod.PAYMENT_REJECTED, RemoteMessageBuilder.COMMAND, payload);
     }
 
     /**
@@ -309,6 +348,8 @@ function LanMethod() {
 };
 /** The transaction start method type */
 LanMethod.TX_START = "TX_START";
+/** The response to the tX_START */
+LanMethod.TX_START_RESPONSE = "TX_START_RESPONSE";
 /** The key pressed method type */
 LanMethod.KEY_PRESS = "KEY_PRESS";
 /** The user interface state change method type */
@@ -387,6 +428,12 @@ LanMethod.VAULT_CARD_RESPONSE = "VAULT_CARD_RESPONSE";
 LanMethod.CLOSEOUT_REQUEST = "CLOSEOUT_REQUEST"
 /** Message type to respond to closeout request */
 LanMethod.CLOSEOUT_RESPONSE = "CLOSEOUT_RESPONSE";
+/** Message returned when a payment is challenged.  Requires user confirmation */
+LanMethod.CONFIRM_PAYMENT_MESSAGE = "CONFIRM_PAYMENT_MESSAGE";
+/** Message sent when a challenged payment is confirmed */
+LanMethod.PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED";
+/** Message sent when a challenged payment is confirmed */
+LanMethod.PAYMENT_REJECTED = "PAYMENT_REJECTED";
 
 /**
  * The shutdown method type
