@@ -817,6 +817,51 @@ WebSocketDevice.prototype.sendSignatureVerified = function(payment, ackId) {
     this.sendMessage(lanMessage);
 }
 
+/**
+ * Confirm a payment
+ *
+ * @param {json} payment - the payment object with signature verification fields populated (positively)
+ * @param {string} [ackId] - an optional identifier that can be used to track an acknowledgement
+ *  to this message.  This should be a unique identifier, but this is NOT enforced in any way.
+ *  A "ACK" message will be returned with this identifier as the message id if this
+ *  parameter is included.  This "ACK" message will be in addition to any other message
+ *  that may be generated as a result of this message being sent.
+ */
+WebSocketDevice.prototype.sendConfirmPayment = function(payment, ackId) {
+    var payload = {};
+    payload.payment = JSON.stringify(payment);
+
+    var lanMessage = this.messageBuilder.buildConfirmPayment(payload);
+    // If an id is included, then an "ACK" message will be sent for this message
+    if(ackId) lanMessage.id = ackId;
+
+    this.sendMessage(lanMessage);
+}
+
+/**
+ * Reject a payment
+ *
+ * @param {json} payment - the payment object with signature verification fields populated (positively)
+ * @param {VoidReason} - the reason (typically provided by the challenge) that the payment was rejected, and
+ *  will be voided.
+ * @param {string} [ackId] - an optional identifier that can be used to track an acknowledgement
+ *  to this message.  This should be a unique identifier, but this is NOT enforced in any way.
+ *  A "ACK" message will be returned with this identifier as the message id if this
+ *  parameter is included.  This "ACK" message will be in addition to any other message
+ *  that may be generated as a result of this message being sent.
+ */
+WebSocketDevice.prototype.sendRejectPayment = function(payment, reason, ackId) {
+    var payload = {};
+    payload.reason = reason;
+    payload.payment = JSON.stringify(payment);
+
+    var lanMessage = this.messageBuilder.buildRejectPayment(payload);
+    // If an id is included, then an "ACK" message will be sent for this message
+    if(ackId) lanMessage.id = ackId;
+
+    this.sendMessage(lanMessage);
+}
+
 // Reject the signature
 /**
  * Verify that the signature is NOT valid

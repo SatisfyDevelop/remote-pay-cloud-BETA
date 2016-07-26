@@ -84,7 +84,8 @@
       var mySale = {
         "amount": 12345, //the amount of a sale, including tax
         "tipAmount": 123, // - the amount of a tip.  Added to the amount for the total.
-        "autoVerifySignature" : false // for this transaction, do NOT auto verify the signature
+        "autoVerifySignature" : false, // for this transaction, do NOT auto verify the signature
+        "requestId": CloverID.getNewId()
       }
 
       // Call the device to take payment, after the payment is complete, call the

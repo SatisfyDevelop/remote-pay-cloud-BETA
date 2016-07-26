@@ -44,7 +44,8 @@
       document.getElementById("uiFeedback").innerHTML = resultDisplay;
     } else {
       var myRefund = {
-        "amount": 12345
+        "amount": 12345,
+        "requestId": CloverID.getNewId()
       }
 
       // Call the device to take payment, after the payment is complete, call the
