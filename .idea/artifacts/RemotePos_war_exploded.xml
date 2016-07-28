@@ -1,0 +1,25 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="RemotePos:war exploded">
+    <output-path>$PROJECT_DIR$/target/RemotePos</output-path>
+    <root id="root">
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="RemotePos" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-server:9.3.6.v20151106" />
+          <element id="library" level="project" name="Maven: javax.servlet:javax.servlet-api:3.1.0" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-http:9.3.6.v20151106" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-util:9.3.6.v20151106" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-io:9.3.6.v20151106" />
+          <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.3.1" />
+          <element id="library" level="project" name="Maven: commons-io:commons-io:2.4" />
+        </element>
+      </element>
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/target/RemotePos/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="javaee-facet-resources" facet="RemotePos/web/Web" />
+    </root>
+  </artifact>
+</component>

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="RemotePos:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="RemotePos.war">
+      <element id="artifact" artifact-name="RemotePos:war exploded" />
+    </root>
+  </artifact>
+</component>
